@@ -2,61 +2,84 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-var onCooldown = map[string]int64{}
+// Making a struct that will hold the user and the timestamp from when they used the message.
+// type UserCooldown struct {
+// 	userID        string
+// 	unixTimeStamp int64
+// }
+
+// Making an array that will hold the list of users.
+// var usersOnCooldown []UserCooldown
 
 var commandHandlers = map[string]func(session *discordgo.Session, interaction *discordgo.InteractionCreate){
 	"test": func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 		authorID := interaction.Member.User.ID
-		timestamp := time.Now().Unix()
+		current_timestamp := time.Now().Unix()
 
-		fmt.Println(stringInKeys(authorID, onCooldown))
+		// Check if the user exists in the database.
+		query := fmt.Sprintf(`SELECT unix_timestamp FROM users_on_cooldown WHERE EXISTS(SELECT user_id FROM users_on_cooldown WHERE user_id = %v);`, authorID)
+		row, err := db.Query(query)
+		if err != nil {
+			log.Println(err)
+		}
 
-		// Checking if the user is in the cool down list.
-		if stringInKeys(authorID, onCooldown) {
-			// The user is in the cooldown list, but are they actually on cooldown? Let's check.
-			if timestamp > timestamp+int64(time.Minute) {
-				// The user actually is not on cool down, so we can give them their daily reward.
-				// Rough implementation at the moment could spice it up to use hours and minutes in the exact response.
+		// Checking to see if any rows returned in query.
+		if row.Next() {
+			// There were, so advance through them, though there should only be one.
+			for row.Next() {
+				var unix_timestamp int64
+				row.Scan(&unix_timestamp)
 
-				//https://pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
-				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Here's your daily reward!",
-					},
-				})
-			} else if timestamp < timestamp+int64(time.Minute) {
-				// The user is not on cooldown at the moment, give them their daily reward.
-				//https://pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
-				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Sorry, you're on cool down at the moment! Come back later!",
-					},
-				})
+				// Is the user actually on cooldown or is it just an outdated entry? Let's check.
+				if current_timestamp >= unix_timestamp+int64(60) {
+					// It appears to be an outdated entry so, let's let the user claim their reward.
+					// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+					session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Here's your daily reward!",
+						},
+					})
+				} else {
+					// The user is on cool down. Fuck the user.
+					// This is a rough implementation. Could probably change it up so that
+					// it shows things like hours, minutes, and seconds remaining.
+					// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+					session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "Fuck off, you're on cooldown.",
+						},
+					})
 
-				// Now we need to place the user on cooldown.
-				onCooldown[authorID] = timestamp
+					return
+				}
 			}
+
+			// Now we need to update the timestamp in the database so that the user
+			// can't use the command again for a certain amount of time.
+			query = fmt.Sprintf(`UPDATE users_on_cooldown SET unix_timestamp = %v WHERE user_id = %v;`, current_timestamp, authorID)
+			result, err := db.Exec(query)
+			if err != nil {
+				log.Println("COULD NOT UPDATE UNIX TIMESTAMP: ", err)
+			}
+			log.Println(result)
+
 		} else {
-			// The user is not in the cooldown list, so we can go ahead and give them their daily reward.
-			//https://pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+			// They weren't in the database, so fuck the user.
+			// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
 			session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Here's your daily reward!",
+					Content: fmt.Sprintln("fuck you"),
 				},
 			})
-
-			// Now we need to put the user on the cooldown list.
-			onCooldown[authorID] = timestamp
 		}
-
-		fmt.Println(onCooldown)
 	},
 }
