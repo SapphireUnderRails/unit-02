@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,30 +10,52 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-sql-driver/mysql"
 )
 
 // Creating a struct to hold the Discord token.
-type Token struct {
-	DiscordToken string
+type Config struct {
+	Discord_Token  string
+	MySQL_Username string
+	MySQL_Password string
+	MySQL_Database string
 }
 
-// Creating a variable to hold the Token struct.
-var token Token
+// Creating a variable to hold the Config struct.
+var config Config
+
+// Global variable to hold database connection, because why not?
+var db *sql.DB
 
 // Main functions.
 func main() {
 
 	// Retrieve the tokens from the tokens.json file.
-	tokensFile, err := os.ReadFile("token.json")
+	configFile, err := os.ReadFile("config.json")
 	if err != nil {
-		log.Fatal("COULD NOT READ 'token.json' FILE: ", err)
+		log.Fatal("COULD NOT READ 'config.json' FILE: ", err)
 	}
 
 	// Unmarshal the tokens from tokensFile.
-	json.Unmarshal(tokensFile, &token)
+	json.Unmarshal(configFile, &config)
+
+	// Set up the parameters for the database connection.
+	sqlConfiguration := mysql.Config{
+		User:   config.MySQL_Username,
+		Passwd: config.MySQL_Password,
+		Net:    "tcp",
+		Addr:   "localhost:3306",
+		DBName: "discord_gacha",
+	}
+
+	// Open a connection to the database.
+	db, err = sql.Open("mysql", sqlConfiguration.FormatDSN())
+	if err != nil {
+		log.Fatal("COULD NOT CONNECT TO DATABASE: ", err)
+	}
 
 	// Create a new Discord session using the provided bot token.
-	session, err := discordgo.New("Bot " + token.DiscordToken)
+	session, err := discordgo.New("Bot " + config.Discord_Token)
 	if err != nil {
 		log.Fatal("ERROR CREATING DISCORD SESSION: ", err)
 	}
