@@ -33,7 +33,7 @@ func main() {
 	// Retrieve the tokens from the tokens.json file.
 	configFile, err := os.ReadFile("config.json")
 	if err != nil {
-		log.Fatal("COULD NOT READ 'config.json' FILE: ", err)
+		log.Fatalf("%vERROR%v - COULD NOT READ 'config.json' FILE:\n\t%v", Red, Reset, err)
 	}
 
 	// Unmarshal the tokens from tokensFile.
@@ -51,13 +51,13 @@ func main() {
 	// Open a connection to the database.
 	db, err = sql.Open("mysql", sqlConfiguration.FormatDSN())
 	if err != nil {
-		log.Fatal("COULD NOT CONNECT TO DATABASE: ", err)
+		log.Fatalf("%vERROR%v - COULD NOT CONNECT TO DATABASE:\n\t%v", Red, Reset, err)
 	}
 
 	// Create a new Discord session using the provided bot token.
 	session, err := discordgo.New("Bot " + config.Discord_Token)
 	if err != nil {
-		log.Fatal("ERROR CREATING DISCORD SESSION: ", err)
+		log.Fatalf("%vERROR%v - PROBLEM CREATING DISCORD SESSION:\n\t%v", Red, Reset, err)
 	}
 
 	// Identify that we want all intents.
@@ -66,21 +66,22 @@ func main() {
 	// Now we open a websocket connection to Discord and begin listening.
 	err = session.Open()
 	if err != nil {
-		log.Fatal("ERROR OPENING WEBSOCKET: ", err)
+		log.Fatalf("%vERROR%v - PROBLEM OPENING WEBSOCKET:\n\t%v", Red, Reset, err)
 	}
 
-	// Making a map of registered commands.
-	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
+	// log.Println("Registering commands...")
+	// // Making a map of registered commands.
+	// registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
 
-	// Looping through the commands array and registering them.
-	// https://pkg.go.dev/github.com/bwmarrin/discordgo#Session.ApplicationCommandCreate
-	for i, command := range commands {
-		registered_command, err := session.ApplicationCommandCreate(session.State.User.ID, "1001077854936760352", command)
-		if err != nil {
-			log.Printf("CANNOT CREATE '%v' COMMAND: %v", command.Name, err)
-		}
-		registeredCommands[i] = registered_command
-	}
+	// // Looping through the commands array and registering them.
+	// // https://pkg.go.dev/github.com/bwmarrin/discordgo#Session.ApplicationCommandCreate
+	// for i, command := range commands {
+	// 	registered_command, err := session.ApplicationCommandCreate(session.State.User.ID, "1001077854936760352", command)
+	// 	if err != nil {
+	// 		log.Printf("CANNOT CREATE '%v' COMMAND: %v", command.Name, err)
+	// 	}
+	// 	registeredCommands[i] = registered_command
+	// }
 
 	// Looping through the array of interaction handlers and adding them to the session.
 	session.AddHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
@@ -90,19 +91,20 @@ func main() {
 	})
 
 	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	log.Printf("%vBot is now running.  Press CTRL-C to exit.%v", Blue, Reset)
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 
-	// Lopping through the registeredCommands array and deleting all the commands.
-	for _, v := range registeredCommands {
-		err := session.ApplicationCommandDelete(session.State.User.ID, "1001077854936760352", v.ID)
-		if err != nil {
-			log.Printf("CANNOT DELETE '%v' COMMAND: %v", v.Name, err)
-		}
-	}
+	// // Lopping through the registeredCommands array and deleting all the commands.
+	// for _, v := range registeredCommands {
+	// 	err := session.ApplicationCommandDelete(session.State.User.ID, "1001077854936760352", v.ID)
+	// 	if err != nil {
+	// 		log.Printf("CANNOT DELETE '%v' COMMAND: %v", v.Name, err)
+	// 	}
+	// }
 
 	// Cleanly close down the Discord session.
 	session.Close()
+	fmt.Println("Have a good day!")
 }
