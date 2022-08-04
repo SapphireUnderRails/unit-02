@@ -29,6 +29,7 @@ var db *sql.DB
 
 // Main functions.
 func main() {
+	log.Printf("%vBOT IS STARTING UP.%v", Blue, Reset)
 
 	// Retrieve the tokens from the tokens.json file.
 	configFile, err := os.ReadFile("config.json")
@@ -91,7 +92,7 @@ func main() {
 	})
 
 	// Wait here until CTRL-C or other term signal is received.
-	log.Printf("%vBot is now running.  Press CTRL-C to exit.%v", Blue, Reset)
+	log.Printf("%vBOT IS NOW RUNNING.%v", Blue, Reset)
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
@@ -106,5 +107,5 @@ func main() {
 
 	// Cleanly close down the Discord session.
 	session.Close()
-	fmt.Println("Have a good day!")
+	fmt.Println("\nHave a good day!")
 }
