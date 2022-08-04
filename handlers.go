@@ -64,7 +64,6 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				log.Printf("%vSUCCESS%v - UPDATED USER COOLDOWN: %v", Green, Reset, result)
 			} else {
 				// The user is actually on cooldown so we should let them know to comeback later.
-				// This is a rough implementation so we should probably display the time and date the user should come back at.
 				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
 				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
