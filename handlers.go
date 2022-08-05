@@ -43,7 +43,6 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				Content: "You are now registered to play!",
 			},
 		})
-
 	},
 	"daily": func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 		authorID := interaction.Member.User.ID
