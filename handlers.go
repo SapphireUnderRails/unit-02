@@ -14,6 +14,7 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 		authorID := interaction.Member.User.ID
 		current_timestamp := time.Now().Unix()
 		var database_timestamp int64
+		var credits int64
 
 		// Perform a single row query in the database to retrieve the timestamp.
 		query := fmt.Sprintf(`SELECT unix_timestamp FROM users_on_cooldown WHERE EXISTS(SELECT user_id FROM users_on_cooldown WHERE user_id = %s);`, authorID)
@@ -23,15 +24,7 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 			// If this is true then it means that the user was not in the database and we need to place them in there.
 			if err.Error() == "sql: no rows in result set" {
-				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
-				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: fmt.Sprintln("Here's your daily reward!"),
-					},
-				})
-
-				// Creating a query to inser the user into the database and place them on cooldown.
+				// Creating a query to insert the user into the database and place them on cooldown.
 				query = fmt.Sprintf(`INSERT INTO users_on_cooldown(user_id, unix_timestamp) VALUES("%s", "%d");`,
 					authorID, current_timestamp)
 
@@ -42,26 +35,76 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 					return
 				}
 				log.Printf("%vSUCCESS%v - PLACED USER INTO DATABASE AND ON COOLDOWN: %v", Green, Reset, result)
-			}
-		} else {
-			// Checking to see if the user is on cooldown or if it is just an outdated entry.
-			if current_timestamp >= database_timestamp+int64(180) {
-				// It was an outdated entry, so we should give the user their reward and place them on cooldown again.
+
+				//Perform another single row query in the database to retreive the number of credits a user has.
+				query := fmt.Sprintf(`SELECT credits FROM users_currency WHERE EXISTS(SELECT user_id FROM users_currency WHERE user_id = %v);`, authorID)
+				err = db.QueryRow(query).Scan(&credits)
+				if err != nil {
+					log.Printf("%vERROR%v - COULD NOT RETRIEVE USER'S CREDITS FROM DATABASE:\n\t%v", Red, Reset, err)
+
+					// If this is true then it means that the user was not in the database and we need to place them in the there.
+					if err.Error() == "sql: no rows in result set" {
+						// Creating a query to insert the user into the database and give them an inital credit amount of 100.
+						query = fmt.Sprintf(`INSERT INTO users_currency(user_id, credits) VALUES("%s", "100");`, authorID)
+
+						// Executing that query.
+						result, err := db.Exec(query)
+						if err != nil {
+							log.Printf("%vERROR%v - COULD NOT PLACE USER IN DATABASE: %v", Red, Reset, err)
+							return
+						}
+						log.Printf("%vSUCCESS%v - PLACED USER INTO DATABASE WITH 100 CREDITS: %v", Green, Reset, result)
+
+					}
+				}
+
 				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
 				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content: "Here's your daily reward!",
+						Content: fmt.Sprintln("Here's your daily reward of 100 coins!"),
 					},
 				})
-				// Now we need to update the timestamp in the database so that the user
+			}
+		} else {
+			// Checking to see if the user is on cooldown or if it is just an outdated entry.
+			if current_timestamp >= database_timestamp+int64(60) {
+				// It was an outdated entry, so we should give the user their reward and place them on cooldown again.
+
+				// Updating the timestamp in the database so that the user
 				// can't use the command again for a certain amount of time.
 				query = fmt.Sprintf(`UPDATE users_on_cooldown SET unix_timestamp = %v WHERE user_id = %v;`, current_timestamp, authorID)
 				result, err := db.Exec(query)
 				if err != nil {
 					log.Printf("%vERROR%v - COULD NOT UPDATE UNIX TIMESTAMP IN DATABASE: %v", Red, Reset, err)
+					return
 				}
 				log.Printf("%vSUCCESS%v - UPDATED USER COOLDOWN: %v", Green, Reset, result)
+
+				// Snagging the amount of credits so that they can be updated.
+				query := fmt.Sprintf(`SELECT credits FROM users_currency WHERE user_id = %v;`, authorID)
+				err = db.QueryRow(query).Scan(&credits)
+				if err != nil {
+					log.Printf("%vERROR%v - COULD NOT GET CREDITS OF USER IN DATABASE: %v", Red, Reset, err)
+					return
+				}
+
+				// Updating the amount of credits in the database for the user.
+				query = fmt.Sprintf(`UPDATE users_currency SET credits = %v WHERE user_id = %v;`, credits+int64(100), authorID)
+				result, err = db.Exec(query)
+				if err != nil {
+					log.Printf("%vERROR%v - COULD NOT UPDATE CREDITS IN DATABASE: %v", Red, Reset, err)
+					return
+				}
+				log.Printf("%vSUCCESS%v - UPDATED USER CREDITS: %v", Green, Reset, result)
+
+				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Here's your daily reward of 100 coins!",
+					},
+				})
 			} else {
 				// The user is actually on cooldown so we should let them know to comeback later.
 				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
