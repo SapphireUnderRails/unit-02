@@ -74,6 +74,25 @@ var commands = []*discordgo.ApplicationCommand{
 		Description: "This command claims your daily credits!",
 	},
 	{
+		Name:        "rename_card",
+		Description: "This command renames a card.",
+
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "old_name",
+				Description: "The old name of the card that you wish to rename.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "new_name",
+				Description: "The new name of the card that you wish to rename.",
+				Required:    true,
+			},
+		},
+	},
+	{
 		Name:        "single_pull",
 		Description: "This command pulls one random card from the gacha pool.",
 	},
