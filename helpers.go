@@ -12,3 +12,11 @@ var (
 	Gray   = "\033[37m"
 	White  = "\033[97m"
 )
+
+func boolToInt(truth bool) int {
+	if truth == true {
+		return 1
+	} else {
+		return 0
+	}
+}
