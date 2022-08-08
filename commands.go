@@ -10,60 +10,9 @@ var manageServerPermission int64 = discordgo.PermissionManageServer
 // The list of commands for the bot.
 var commands = []*discordgo.ApplicationCommand{
 	{
-		Name:                     "add_card",
-		Description:              "This command adds a card to the database.",
+		Name:                     "add_cards",
+		Description:              "Loops through './Card Art' folder and registers all the cards in there.",
 		DefaultMemberPermissions: &manageServerPermission,
-
-		Options: []*discordgo.ApplicationCommandOption{
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "character_name",
-				Description: "The name of the character on the card you wish to upload to the database.",
-				Required:    true,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "card_id",
-				Description: "The ID of the card you wish to upload to the database.",
-				Required:    true,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionInteger,
-				Name:        "evolution",
-				Description: "The evolution of the card you wish to upload to the database.",
-				Required:    true,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionBoolean,
-				Name:        "au",
-				Description: "Whether or not the card you wish to upload to the database is of an AU character.",
-				Required:    true,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionBoolean,
-				Name:        "crossover",
-				Description: "Whether or not the card you wish to upload to the database is a crossover unit.",
-				Required:    true,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "crossover_series",
-				Description: "The series that the unit that you wish to upload to the database is crossed over with.",
-				Required:    true,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionString,
-				Name:        "theme",
-				Description: "The theme of the unit that you wish to upload to the database is crossed over with.",
-				Required:    true,
-			},
-			{
-				Type:        discordgo.ApplicationCommandOptionAttachment,
-				Name:        "image",
-				Description: "The image of the card you wish to upload to the database.",
-				Required:    true,
-			},
-		},
 	},
 	{
 		Name:        "register",
@@ -72,6 +21,27 @@ var commands = []*discordgo.ApplicationCommand{
 	{
 		Name:        "daily",
 		Description: "This command claims your daily credits!",
+	},
+	{
+		Name:        "credits",
+		Description: "This command tells you how many credits you have.",
+	},
+	{
+		Name:        "characters",
+		Description: "This command lists the available gacha pools to pull from.",
+	},
+	{
+		Name:        "single_pull",
+		Description: "This command pulls one random card from the gacha pool.",
+
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "character",
+				Description: "The name of the character you wish to draw for.",
+				Required:    false,
+			},
+		},
 	},
 	{
 		Name:        "rename_card",
@@ -91,9 +61,5 @@ var commands = []*discordgo.ApplicationCommand{
 				Required:    true,
 			},
 		},
-	},
-	{
-		Name:        "single_pull",
-		Description: "This command pulls one random card from the gacha pool.",
 	},
 }
