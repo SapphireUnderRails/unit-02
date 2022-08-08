@@ -14,7 +14,7 @@ var (
 )
 
 func boolToInt(truth bool) int {
-	if truth == true {
+	if truth {
 		return 1
 	} else {
 		return 0
