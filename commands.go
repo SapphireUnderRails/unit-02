@@ -44,6 +44,19 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
+		Name:        "ten_pull",
+		Description: "This command pulls ten random cards from the gacha pool.",
+
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "character",
+				Description: "The name of the character you wish to draw for.",
+				Required:    false,
+			},
+		},
+	},
+	{
 		Name:        "rename_card",
 		Description: "This command renames a card.",
 
