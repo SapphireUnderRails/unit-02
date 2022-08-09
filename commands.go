@@ -70,6 +70,19 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
+		Name:        "display",
+		Description: "This command displays the specified card in your collection.",
+
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "card_name",
+				Description: "The name of the card you wish to display.",
+				Required:    true,
+			},
+		},
+	},
+	{
 		Name:        "rename_card",
 		Description: "This command renames a card.",
 
