@@ -57,6 +57,19 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
+		Name:        "list",
+		Description: "This command lists the cards in your collection.",
+
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "character",
+				Description: "The name of the character you wish to list.",
+				Required:    false,
+			},
+		},
+	},
+	{
 		Name:        "rename_card",
 		Description: "This command renames a card.",
 
