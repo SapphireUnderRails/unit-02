@@ -550,6 +550,69 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 			}
 		}
 	},
+	"display": func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+		authorID := interaction.Member.User.ID
+		cardName := interaction.ApplicationCommandData().Options[0].StringValue()
+		var cardID string
+		var evolution int8
+		var cardImage string
+
+		if userIsRegisered(session, interaction) {
+			// Performing a single row query to grab the card the user wants to display.
+			query := fmt.Sprintf(`SELECT card_id, evolution FROM users_collection WHERE user_id = %s AND custom_name = "%s";`,
+				authorID, cardName)
+			err := db.QueryRow(query).Scan(&cardID, &evolution)
+			if err != nil && err != sql.ErrNoRows {
+				log.Printf("%vERROR%v - COULD NOT RETRIEVE CARD ID AND EVOLUTION FROM COLLECTIONS DATABASE:\n\t%v", Red, Reset, err)
+				return
+			} else if err == sql.ErrNoRows {
+				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "I couldn't find a card with that name.",
+					},
+				})
+			}
+
+			// Performing a single row query to grab the card image that matches the card id and the evolution.
+			query = fmt.Sprintf(`SELECT card_image FROM cards WHERE card_id = "%s" AND evolution = %d;`,
+				cardID, evolution)
+			err = db.QueryRow(query).Scan(&cardImage)
+			if err != nil && err != sql.ErrNoRows {
+				log.Printf("%vERROR%v - COULD NOT RETRIEVE CARD ID AND EVOLUTION FROM COLLECTIONS DATABASE:\n\t%v", Red, Reset, err)
+				return
+			}
+
+			// Creating an embed to hold the image.
+			embedImage := discordgo.MessageEmbedImage{
+				URL: cardImage,
+			}
+
+			embeds := []*discordgo.MessageEmbed{
+				{
+					Description: fmt.Sprintf("%v#%v's %v",
+						interaction.Member.User.Username, interaction.Member.User.Discriminator, cardName),
+					Image: &embedImage,
+				},
+			}
+
+			session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Embeds: embeds,
+				},
+			})
+		} else {
+			// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+			session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Hey! You aren't registered to play yet! Remember to use the command `/register` before trying to play!",
+				},
+			})
+		}
+	},
 	"rename_card": func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 		oldName := interaction.ApplicationCommandData().Options[0].StringValue()
 		newName := interaction.ApplicationCommandData().Options[1].StringValue()
@@ -608,7 +671,8 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 		if err == sql.ErrNoRows {
 			// Creating a query to rename the card in the user's collection.
-			query = fmt.Sprintf(`UPDATE users_collection SET custom_name = "%v" WHERE custom_name = "%v";`, newName, oldName)
+			query = fmt.Sprintf(`UPDATE users_collection SET custom_name = "%v" WHERE custom_name = "%v" and user_id = %v;`,
+				newName, oldName, authorID)
 
 			// Executing that query.
 			result, err := db.Exec(query)
