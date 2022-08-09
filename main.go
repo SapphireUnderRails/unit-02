@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -26,6 +27,9 @@ var config Config
 
 // Global variable to hold database connection, because why not?
 var db *sql.DB
+
+// Global variable to hold regex string.
+var re *regexp.Regexp
 
 // Main functions.
 func main() {
@@ -53,6 +57,12 @@ func main() {
 	db, err = sql.Open("mysql", sqlConfiguration.FormatDSN())
 	if err != nil {
 		log.Fatalf("%vERROR%v - COULD NOT CONNECT TO DATABASE:\n\t%v", Red, Reset, err)
+	}
+
+	// Compile regex string.
+	re, err = regexp.Compile(`^[a-zA-Z0-9_.-]*$`)
+	if err != nil {
+		log.Fatal("COULD NOT COMPILE REGEX: ", err)
 	}
 
 	// Create a new Discord session using the provided bot token.
