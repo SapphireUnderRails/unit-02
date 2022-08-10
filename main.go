@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Compile regex string.
-	re, err = regexp.Compile(`^[a-zA-Z0-9_.-]*$`)
+	re, err = regexp.Compile(`^[A-Za-z0-9 _]*[A-Za-z0-9][A-Za-z0-9 _]*$`)
 	if err != nil {
 		log.Fatal("COULD NOT COMPILE REGEX: ", err)
 	}
