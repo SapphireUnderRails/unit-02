@@ -22,6 +22,7 @@ var (
 	White  = "\033[97m"
 )
 
+// Function to check and see if the user is register.
 func userIsRegisered(session *discordgo.Session, interaction *discordgo.InteractionCreate) bool {
 	var id int64
 	authorID := interaction.Member.User.ID
@@ -41,6 +42,7 @@ func userIsRegisered(session *discordgo.Session, interaction *discordgo.Interact
 	}
 }
 
+// Function that pulls a card from the card database and adds it to the user database. Does not handle cost.
 func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCreate) discordgo.WebhookParams {
 	var drawnCardID string
 	var characterName string
@@ -106,6 +108,14 @@ func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCrea
 		if evolution == 3 {
 			// If the evolution level is the max level, then we need to refund the user for this draw.
 			// Updating the amount of credits in the database for the user.
+
+			// Snagging the amount of credits so that they can be updated.
+			query := fmt.Sprintf(`SELECT credits FROM users_registration WHERE user_id = %v;`, authorID)
+			err := db.QueryRow(query).Scan(&credits)
+			if err != nil {
+				log.Printf("%vERROR%v - COULD NOT GET CREDITS OF USER IN DATABASE: %v", Red, Reset, err)
+			}
+
 			query = fmt.Sprintf(`UPDATE users_registration SET credits = %v WHERE user_id = %v;`, credits+int64(100), authorID)
 			result, err := db.Exec(query)
 			if err != nil {
@@ -228,6 +238,7 @@ func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCrea
 	return discordgo.WebhookParams{}
 }
 
+// Function that converts a bool to an int. I don't know what else to say.
 func boolToInt(truth bool) int {
 	if truth {
 		return 1
@@ -236,6 +247,7 @@ func boolToInt(truth bool) int {
 	}
 }
 
+// Function to return the integer that is less than the other.
 func min(a, b int) int {
 	if a <= b {
 		return a
