@@ -430,16 +430,16 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 		var id int64
 		var characterName string
 		var customName string
+		var query string
+		var webhookParams []discordgo.WebhookParams
 
 		if userIsRegisered(session, interaction) {
 			// I don't even know at this point. Check whether or not a character is specified or something.
-			var query string
-			var webhookParams []discordgo.WebhookParams
-
+			log.Println("user is registerd")
 			if len(interaction.ApplicationCommandData().Options) == 0 {
-				query = fmt.Sprintf(`SELECT id, character_name, custom_name FROM users_collection WHERE user_id = %v`, authorID)
+				query = fmt.Sprintf(`SELECT id, character_name, custom_name FROM users_collection WHERE user_id = %v;`, authorID)
 			} else {
-				query = fmt.Sprintf(`SELECT id, character_name, custom_name FROM users_collection WHERE user_id = %v AND character_name = "%v"`,
+				query = fmt.Sprintf(`SELECT id, character_name, custom_name FROM users_collection WHERE user_id = %v AND character_name = "%v";`,
 					authorID, interaction.ApplicationCommandData().Options[0].StringValue())
 			}
 
@@ -460,19 +460,6 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				return
 			}
 
-			// If there were no rows returned, let the user know that they don't have any cards.
-			if !rows.Next() {
-				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
-				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "It looks like you don't have any cards that match that criteria!",
-					},
-				})
-
-				return
-			}
-
 			// Iterating over the results and appending to an array of cards.
 			for rows.Next() {
 				err := rows.Scan(&id, &characterName, &customName)
@@ -487,6 +474,19 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				card.customName = customName
 
 				cards = append(cards, card)
+			}
+
+			if len(cards) == 0 {
+				// If there were no rows returned, let the user know that they don't have any cards.
+				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "It looks like you don't have any cards that match that criteria!",
+					},
+				})
+
+				return
 			}
 
 			// SUPER funky shit to chop up array.
@@ -644,7 +644,7 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 			session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Hey! You can only have letters, numbers, dashes, and underscores in your card's name!",
+					Content: "Hey! You can only have letters, numbers, dashes, underscores, and spaces in your card's name!",
 				},
 			})
 			return
