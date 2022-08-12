@@ -65,6 +65,33 @@ func userIsRegisered(session *discordgo.Session, interaction *discordgo.Interact
 	}
 }
 
+// Function to get the credits of a user.
+func getCredits(authorID string) int64 {
+	var credits int64
+	// Snagging the amount of credits so that they can be checked against.
+	query := fmt.Sprintf(`SELECT credits FROM users_registration WHERE user_id = %v;`, authorID)
+	err := db.QueryRow(query).Scan(&credits)
+	if err != nil {
+		log.Printf("%vERROR%v - COULD NOT GET CREDITS OF USER IN DATABASE: %v", Red, Reset, err)
+	}
+	log.Printf("%vSUCCESS%v - GRABBED USER CREDITS", Green, Reset)
+
+	return credits
+}
+
+// Function to update the credits of a user.
+func updateCredits(amount int64, authorID string) {
+	// Updating the amount of credits in the database for the user.
+	query := fmt.Sprintf(`UPDATE users_registration SET credits = %v WHERE user_id = %v;`,
+		getCredits(authorID)+int64(amount), authorID)
+	result, err := db.Exec(query)
+	if err != nil {
+		log.Printf("%vERROR%v - COULD NOT UPDATE CREDITS IN DATABASE: %v", Red, Reset, err)
+		return
+	}
+	log.Printf("%vSUCCESS%v - UPDATED USER CREDITS: %v", Green, Reset, result)
+}
+
 // Function that pulls a card from the card database and adds it to the user database. Does not handle cost.
 func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCreate) discordgo.WebhookParams {
 	var drawnCardID string
