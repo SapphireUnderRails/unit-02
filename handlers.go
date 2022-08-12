@@ -274,31 +274,11 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 		}
 	},
 	"characters": func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
-		var character string
-		var characters []string
-		// Creating a query to get distinct character names from the cards table.
-		query := `SELECT DISTINCT character_name FROM cards;`
-		rows, err := db.Query(query)
-		if err != nil {
-			log.Printf("%vERROR%v - COULD NOT RETRIEVE CHARACTERS FROM DATABASE:\n\t%v", Red, Reset, err)
-			return
-		}
-
-		for rows.Next() {
-			err := rows.Scan(&character)
-			if err != nil {
-				log.Printf("%vERROR%v - COULD NOT RETRIEVE CHARACTER FROM ROW:\n\t%v", Red, Reset, err)
-				return
-			}
-
-			characters = append(characters, character)
-		}
-
 		// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
 		session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: strings.Join(characters, ", "),
+				Content: strings.Join(charactersList(), ", "),
 			},
 		})
 	},
@@ -306,55 +286,71 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 		var credits int64
 		authorID := interaction.Member.User.ID
 
-		if userIsRegisered(session, interaction) {
-			// Snagging the amount of credits so that they can be checked against.
-			query := fmt.Sprintf(`SELECT credits FROM users_registration WHERE user_id = %v;`, authorID)
-			err := db.QueryRow(query).Scan(&credits)
-			if err != nil {
-				log.Printf("%vERROR%v - COULD NOT GET CREDITS OF USER IN DATABASE: %v", Red, Reset, err)
-				return
-			}
+		for _, value := range charactersList() {
+			if value == strings.Title(interaction.ApplicationCommandData().Options[0].StringValue()) {
 
-			// Making sure the user has the correct amount of credits.
-			if credits >= int64(200) {
-				// Updating the amount of credits in the database for the user.
-				query = fmt.Sprintf(`UPDATE users_registration SET credits = %v WHERE user_id = %v;`, credits-int64(200), authorID)
-				result, err := db.Exec(query)
+			}
+		}
+
+		if inArray(strings.Title(interaction.ApplicationCommandData().Options[0].StringValue()), charactersList()) {
+			if userIsRegisered(session, interaction) {
+				// Snagging the amount of credits so that they can be checked against.
+				query := fmt.Sprintf(`SELECT credits FROM users_registration WHERE user_id = %v;`, authorID)
+				err := db.QueryRow(query).Scan(&credits)
 				if err != nil {
-					log.Printf("%vERROR%v - COULD NOT UPDATE CREDITS IN DATABASE: %v", Red, Reset, err)
+					log.Printf("%vERROR%v - COULD NOT GET CREDITS OF USER IN DATABASE: %v", Red, Reset, err)
 					return
 				}
-				log.Printf("%vSUCCESS%v - UPDATED USER CREDITS: %v", Green, Reset, result)
 
-				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
-				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						//Content: fmt.Sprintf("Successfully added %v to your collection. You can rename this card at anytime by using `/rename [original_name] [new_name]", drawnCardID),
-						Content: "I've deducted 200 credits from your wallet, let's see what you drew!",
-					},
-				})
+				// Making sure the user has the correct amount of credits.
+				if credits >= int64(200) {
+					// Updating the amount of credits in the database for the user.
+					query = fmt.Sprintf(`UPDATE users_registration SET credits = %v WHERE user_id = %v;`, credits-int64(200), authorID)
+					result, err := db.Exec(query)
+					if err != nil {
+						log.Printf("%vERROR%v - COULD NOT UPDATE CREDITS IN DATABASE: %v", Red, Reset, err)
+						return
+					}
+					log.Printf("%vSUCCESS%v - UPDATED USER CREDITS: %v", Green, Reset, result)
 
-				time.Sleep(time.Second)
+					// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+					session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							//Content: fmt.Sprintf("Successfully added %v to your collection. You can rename this card at anytime by using `/rename [original_name] [new_name]", drawnCardID),
+							Content: "I've deducted 200 credits from your wallet, let's see what you drew!",
+						},
+					})
 
-				webhook := pullCard(session, interaction)
-				session.FollowupMessageCreate(interaction.Interaction, true, &webhook)
+					time.Sleep(time.Second)
+
+					webhook := pullCard(session, interaction)
+					session.FollowupMessageCreate(interaction.Interaction, true, &webhook)
+				} else {
+					// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+					session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+						Type: discordgo.InteractionResponseChannelMessageWithSource,
+						Data: &discordgo.InteractionResponseData{
+							Content: "You do not have enough credits to draw a card.",
+						},
+					})
+				}
+
 			} else {
 				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
 				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content: "You do not have enough credits to draw a card.",
+						Content: "Hey! You aren't registered to play yet! Remember to use the command `/register` before trying to play!",
 					},
 				})
 			}
-
 		} else {
 			// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
 			session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Hey! You aren't registered to play yet! Remember to use the command `/register` before trying to play!",
+					Content: "I couldn't find a gacha pool with that name.",
 				},
 			})
 		}
@@ -435,7 +431,6 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 		if userIsRegisered(session, interaction) {
 			// I don't even know at this point. Check whether or not a character is specified or something.
-			log.Println("user is registerd")
 			if len(interaction.ApplicationCommandData().Options) == 0 {
 				query = fmt.Sprintf(`SELECT id, character_name, custom_name FROM users_collection WHERE user_id = %v;`, authorID)
 			} else {
@@ -566,6 +561,8 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				log.Printf("%vERROR%v - COULD NOT RETRIEVE CARD ID AND EVOLUTION FROM COLLECTIONS DATABASE:\n\t%v", Red, Reset, err)
 				return
 			} else if err == sql.ErrNoRows {
+				log.Printf("%vERROR%v - NO ROWS RETURNED:\n\t%v", Red, Reset, err)
+
 				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
 				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
