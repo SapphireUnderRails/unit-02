@@ -531,21 +531,6 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				chunkedCards = append(chunkedCards, cards[i:end])
 			}
 
-			// h := 0
-			// var j int
-
-			// chunkedCards := make(map[int][]Card)
-			// for i := 0; i < len(cards); i += size {
-			// 	j += size
-
-			// 	if j > len(cards) {
-			// 		j = len(cards)
-			// 	}
-
-			// 	chunkedCards[h] = cards[i:j]
-			// 	h++
-			// }
-
 			// Printing the results to the user. Need to clean it up...
 			for _, values := range chunkedCards {
 				// content := "```\nCharacter:\t\tCard Name:\n"
