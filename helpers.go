@@ -22,6 +22,29 @@ var (
 	White  = "\033[97m"
 )
 
+// Function to get all the available characters to pull from.
+func charactersList() []string {
+	var character string
+	var characters []string
+	// Creating a query to get distinct character names from the cards table.
+	query := `SELECT DISTINCT character_name FROM cards;`
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Printf("%vERROR%v - COULD NOT RETRIEVE CHARACTERS FROM DATABASE:\n\t%v", Red, Reset, err)
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&character)
+		if err != nil {
+			log.Printf("%vERROR%v - COULD NOT RETRIEVE CHARACTER FROM ROW:\n\t%v", Red, Reset, err)
+		}
+
+		characters = append(characters, character)
+	}
+
+	return characters
+}
+
 // Function to check and see if the user is register.
 func userIsRegisered(session *discordgo.Session, interaction *discordgo.InteractionCreate) bool {
 	var id int64
@@ -236,6 +259,17 @@ func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCrea
 	}
 
 	return discordgo.WebhookParams{}
+}
+
+// Function to check if element is in array.
+func inArray(str string, arr []string) bool {
+	for _, value := range arr {
+		if value == str {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Function that converts a bool to an int. I don't know what else to say.
