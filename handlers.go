@@ -398,7 +398,8 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 						// Informing the user of the results.
 						for _, webhook := range webhookParams {
-							session.FollowupMessageCreate(interaction.Interaction, true, &webhook)
+							time.Sleep(time.Second)
+							session.FollowupMessageCreate(interaction.Interaction, false, &webhook)
 							time.Sleep(time.Second)
 						}
 					}
@@ -426,7 +427,8 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 					// Informing the user of the results.
 					for _, webhook := range webhookParams {
-						session.FollowupMessageCreate(interaction.Interaction, true, &webhook)
+						time.Sleep(time.Second)
+						session.FollowupMessageCreate(interaction.Interaction, false, &webhook)
 						time.Sleep(time.Second)
 					}
 				}
