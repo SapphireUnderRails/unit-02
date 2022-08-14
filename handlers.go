@@ -444,6 +444,8 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 						paginator.Widget.Timeout = time.Minute * 5
 
+						paginator.Widget.LockToUsers(authorID)
+
 						paginator.Spawn()
 
 						// // Informing the user of the results.
@@ -484,6 +486,8 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 					paginator.SetPageFooters()
 
 					paginator.Widget.Timeout = time.Minute * 5
+
+					paginator.Widget.LockToUsers(authorID)
 
 					paginator.Spawn()
 
@@ -656,6 +660,8 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 			paginator.SetPageFooters()
 
 			paginator.Widget.Timeout = time.Minute * 5
+
+			paginator.Widget.LockToUsers(authorID)
 
 			paginator.Spawn()
 
