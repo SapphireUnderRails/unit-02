@@ -4,7 +4,11 @@ go 1.18
 
 replace github.com/bwmarrin/discordgo => /Users/quinton/Documents/Projects/Go/discordgo
 
+replace github.com/Necroforger/dgwidgets => /Users/quinton/Documents/Projects/Go/dgwidgets
+
 require github.com/bwmarrin/discordgo v0.25.0
+
+require github.com/Necroforger/dgwidgets v0.0.0-20190131052008-56c8c1ca33e0 // indirect
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
