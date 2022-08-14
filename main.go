@@ -80,19 +80,19 @@ func main() {
 		log.Fatalf("%vERROR%v - PROBLEM OPENING WEBSOCKET:\n\t%v", Red, Reset, err)
 	}
 
-	// log.Println("Registering commands...")
-	// // Making a map of registered commands.
-	// registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
+	log.Println("Registering commands...")
+	// Making a map of registered commands.
+	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
 
-	// // Looping through the commands array and registering them.
-	// // https://pkg.go.dev/github.com/bwmarrin/discordgo#Session.ApplicationCommandCreate
-	// for i, command := range commands {
-	// 	registered_command, err := session.ApplicationCommandCreate(session.State.User.ID, "1001077854936760352", command)
-	// 	if err != nil {
-	// 		log.Printf("CANNOT CREATE '%v' COMMAND: %v", command.Name, err)
-	// 	}
-	// 	registeredCommands[i] = registered_command
-	// }
+	// Looping through the commands array and registering them.
+	// https://pkg.go.dev/github.com/bwmarrin/discordgo#Session.ApplicationCommandCreate
+	for i, command := range commands {
+		registered_command, err := session.ApplicationCommandCreate(session.State.User.ID, "1001077854936760352", command)
+		if err != nil {
+			log.Printf("CANNOT CREATE '%v' COMMAND: %v", command.Name, err)
+		}
+		registeredCommands[i] = registered_command
+	}
 
 	// Looping through the array of interaction handlers and adding them to the session.
 	session.AddHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
