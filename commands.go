@@ -7,32 +7,60 @@ import (
 // Permissions for commands.
 var manageServerPermission int64 = discordgo.PermissionManageServer
 
+var dmPermission bool = false
+
 // The list of commands for the bot.
 var commands = []*discordgo.ApplicationCommand{
 	{
 		Name:                     "add_cards",
 		Description:              "Loops through './Card Art' folder and registers all the cards in there.",
 		DefaultMemberPermissions: &manageServerPermission,
+		DMPermission:             &dmPermission,
 	},
 	{
-		Name:        "register",
-		Description: "This command registers you to play!",
+		Name:         "register",
+		Description:  "This command registers you to play!",
+		DMPermission: &dmPermission,
 	},
 	{
-		Name:        "daily",
-		Description: "This command claims your daily credits!",
+		Name:         "daily",
+		Description:  "This command claims your daily credits!",
+		DMPermission: &dmPermission,
 	},
 	{
-		Name:        "credits",
-		Description: "This command tells you how many credits you have.",
+		Name:         "credits",
+		Description:  "This command tells you how many credits you have.",
+		DMPermission: &dmPermission,
 	},
 	{
-		Name:        "characters",
-		Description: "This command lists the available gacha pools to pull from.",
+		Name:         "gift_credits",
+		Description:  "This command will gift some of your credits to another user.",
+		DMPermission: &dmPermission,
+
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionUser,
+				Name:        "user",
+				Description: "The user that you wish to gift credits to.",
+				Required:    true,
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionInteger,
+				Name:        "amount",
+				Description: "The amount of credits you wish to gift",
+				Required:    true,
+			},
+		},
 	},
 	{
-		Name:        "single_pull",
-		Description: "This command pulls one random card from the gacha pool.",
+		Name:         "characters",
+		Description:  "This command lists the available gacha pools to pull from.",
+		DMPermission: &dmPermission,
+	},
+	{
+		Name:         "single_pull",
+		Description:  "This command pulls one random card from the gacha pool.",
+		DMPermission: &dmPermission,
 
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -44,8 +72,9 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        "ten_pull",
-		Description: "This command pulls ten random cards from the gacha pool.",
+		Name:         "ten_pull",
+		Description:  "This command pulls ten random cards from the gacha pool.",
+		DMPermission: &dmPermission,
 
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -57,8 +86,9 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        "list",
-		Description: "This command lists the cards in your collection.",
+		Name:         "list",
+		Description:  "This command lists the cards in your collection.",
+		DMPermission: &dmPermission,
 
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -70,8 +100,9 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        "display",
-		Description: "This command displays the specified card in your collection.",
+		Name:         "display",
+		Description:  "This command displays the specified card in your collection.",
+		DMPermission: &dmPermission,
 
 		Options: []*discordgo.ApplicationCommandOption{
 			{
@@ -83,8 +114,9 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
-		Name:        "rename_card",
-		Description: "This command renames a card.",
+		Name:         "rename_card",
+		Description:  "This command renames a card.",
+		DMPermission: &dmPermission,
 
 		Options: []*discordgo.ApplicationCommandOption{
 			{
