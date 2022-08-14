@@ -65,6 +65,24 @@ func userIsRegisered(session *discordgo.Session, interaction *discordgo.Interact
 	}
 }
 
+func userIsRegiseredByID(userID string) bool {
+	var id int64
+
+	// Perform a single row query to check if the user is registered.
+	query := fmt.Sprintf(`SELECT id FROM users_registration WHERE user_id = %s;`, userID)
+	err := db.QueryRow(query).Scan(&id)
+	if err != nil && err != sql.ErrNoRows {
+		log.Printf("%vERROR%v - COULD NOT RETRIEVE USER FROM REGISTRATION DATABASE:\n\t%v", Red, Reset, err)
+		return false
+	}
+
+	if err == sql.ErrNoRows {
+		return false
+	} else {
+		return true
+	}
+}
+
 // Function to get the credits of a user.
 func getCredits(authorID string) int64 {
 	var credits int64
@@ -144,14 +162,14 @@ func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCrea
 		}
 		embeds := []*discordgo.MessageEmbed{
 			{
-				Image: &image,
+				Image:       &image,
+				Description: fmt.Sprintf("Successfully added %v to your collection.", drawnCardID),
 			},
 		}
 
 		// Returning the webhook.
 		return discordgo.WebhookParams{
-			Embeds:  embeds,
-			Content: fmt.Sprintf("Successfully added %v to your collection.", drawnCardID),
+			Embeds: embeds,
 		}
 	} else {
 		// The user does have this card, the only question is what level do they have?
@@ -193,14 +211,14 @@ func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCrea
 			}
 			embeds := []*discordgo.MessageEmbed{
 				{
-					Image: &image,
+					Image:       &image,
+					Description: fmt.Sprintf("Whoah there! You've already maxed out your %v, I've refunded half a draw for you. Go ahead and try again!", customName),
 				},
 			}
 
 			// Returning the webhook.
 			return discordgo.WebhookParams{
-				Content: fmt.Sprintf("Whoah there! You've already maxed out your %v, I've refunded half a draw for you. Go ahead and try again!", customName),
-				Embeds:  embeds,
+				Embeds: embeds,
 			}
 		} else if evolution == 2 {
 			// If the evolution level is 2, then we need to evolve the card to level 3.
@@ -233,14 +251,14 @@ func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCrea
 			}
 			embeds := []*discordgo.MessageEmbed{
 				{
-					Image: &image,
+					Image:       &image,
+					Description: fmt.Sprintf("Check it out! You've evolved your %v!", customName),
 				},
 			}
 
 			// Returning the webhook.
 			return discordgo.WebhookParams{
-				Content: fmt.Sprintf("Check it out! You've evolved your %v!", customName),
-				Embeds:  embeds,
+				Embeds: embeds,
 			}
 		} else if evolution == 1 {
 			// If the evolution level is 1, then we need to evolve the card to level 2.
@@ -273,14 +291,14 @@ func pullCard(session *discordgo.Session, interaction *discordgo.InteractionCrea
 			}
 			embeds := []*discordgo.MessageEmbed{
 				{
-					Image: &image,
+					Image:       &image,
+					Description: fmt.Sprintf("Check it out! You've evolved your %v!", customName),
 				},
 			}
 
 			// Returning the webhook.
 			return discordgo.WebhookParams{
-				Content: fmt.Sprintf("Check it out! You've evolved your %v!", customName),
-				Embeds:  embeds,
+				Embeds: embeds,
 			}
 		}
 	}
