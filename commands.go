@@ -100,6 +100,20 @@ var commands = []*discordgo.ApplicationCommand{
 		},
 	},
 	{
+		Name:         "list_amount",
+		Description:  "This command lists the amount of the cards in your collection.",
+		DMPermission: &dmPermission,
+
+		Options: []*discordgo.ApplicationCommandOption{
+			{
+				Type:        discordgo.ApplicationCommandOptionString,
+				Name:        "character",
+				Description: "The name of the character you wish to list.",
+				Required:    false,
+			},
+		},
+	},
+	{
 		Name:         "display",
 		Description:  "This command displays the specified card in your collection.",
 		DMPermission: &dmPermission,
