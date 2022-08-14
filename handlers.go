@@ -14,6 +14,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 
+	"github.com/Necroforger/dgwidgets"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -164,7 +165,7 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 			session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: "Welcome to testing. You are now registered to play. Here's 10,000 credits to get you started!",
+					Content: "You are now registered to play. Here's 10,000 credits to get you started!",
 				},
 			})
 		}
@@ -270,6 +271,44 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: "Hey! You aren't registered to play yet! Remember to use the command `/register` before trying to play!",
+				},
+			})
+		}
+	},
+	"gift_credits": func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+		recipient := interaction.ApplicationCommandData().Options[0].UserValue(session)
+		amount := interaction.ApplicationCommandData().Options[1].IntValue()
+		userID := interaction.Member.User.ID
+
+		printer := message.NewPrinter(language.English)
+
+		// Checking to make sure the user is register.
+		if userIsRegisered(session, interaction) && userIsRegiseredByID(recipient.ID) {
+			// Checking to make suer the user has enough credits to gift.
+			if getCredits(userID) >= amount {
+				updateCredits(-amount, userID)
+				updateCredits(amount, recipient.ID)
+
+				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: printer.Sprintf("Successfully donated %d credits to %v#%v!", amount, recipient.Username, recipient.Discriminator),
+					},
+				})
+			} else {
+				session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: printer.Sprintf("It looks like you don't have enough credits to complete this transaction. You're missing %d credits!",
+							amount-getCredits(userID)),
+					},
+				})
+			}
+		} else {
+			session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Hey! You either you or the recipient aren't registered to play yet! Remember to use the command `/register` before trying to play!",
 				},
 			})
 		}
@@ -396,12 +435,24 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 							webhookParams = append(webhookParams, webhook)
 						}
 
-						// Informing the user of the results.
+						paginator := dgwidgets.NewPaginator(session, interaction.ChannelID)
+
 						for _, webhook := range webhookParams {
-							time.Sleep(time.Second)
-							session.FollowupMessageCreate(interaction.Interaction, false, &webhook)
-							time.Sleep(time.Second)
+							paginator.Add(webhook.Embeds[0])
 						}
+
+						paginator.SetPageFooters()
+
+						paginator.Widget.Timeout = time.Minute * 5
+
+						paginator.Spawn()
+
+						// // Informing the user of the results.
+						// for _, webhook := range webhookParams {
+						// 	time.Sleep(time.Second)
+						// 	session.FollowupMessageCreate(interaction.Interaction, false, &webhook)
+						// 	time.Sleep(time.Second)
+						// }
 					}
 				} else {
 					// The user did not specify a character to pull for.
@@ -425,12 +476,24 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 						webhookParams = append(webhookParams, webhook)
 					}
 
-					// Informing the user of the results.
+					paginator := dgwidgets.NewPaginator(session, interaction.ChannelID)
+
 					for _, webhook := range webhookParams {
-						time.Sleep(time.Second)
-						session.FollowupMessageCreate(interaction.Interaction, false, &webhook)
-						time.Sleep(time.Second)
+						paginator.Add(webhook.Embeds[0])
 					}
+
+					paginator.SetPageFooters()
+
+					paginator.Widget.Timeout = time.Minute * 5
+
+					paginator.Spawn()
+
+					// // Informing the user of the results.
+					// for _, webhook := range webhookParams {
+					// 	time.Sleep(time.Second)
+					// 	session.FollowupMessageCreate(interaction.Interaction, false, &webhook)
+					// 	time.Sleep(time.Second)
+					// }
 				}
 			} else {
 				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
@@ -456,15 +519,17 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 		var id int64
 		var characterName string
 		var customName string
+		var evolution int8
 		var query string
-		var webhookParams []discordgo.WebhookParams
+		// var webhookParams []discordgo.WebhookParams
+		var embeds []*discordgo.MessageEmbed
 
 		if userIsRegisered(session, interaction) {
 			// I don't even know at this point. Check whether or not a character is specified or something.
 			if len(interaction.ApplicationCommandData().Options) == 0 {
-				query = fmt.Sprintf(`SELECT id, character_name, custom_name FROM users_collection WHERE user_id = %v;`, authorID)
+				query = fmt.Sprintf(`SELECT id, character_name, custom_name, evolution FROM users_collection WHERE user_id = %v;`, authorID)
 			} else {
-				query = fmt.Sprintf(`SELECT id, character_name, custom_name FROM users_collection WHERE user_id = %v AND character_name = "%v";`,
+				query = fmt.Sprintf(`SELECT id, character_name, custom_name, evolution FROM users_collection WHERE user_id = %v AND character_name = "%v";`,
 					authorID, interaction.ApplicationCommandData().Options[0].StringValue())
 			}
 
@@ -480,6 +545,7 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				id            int64
 				characterName string
 				customName    string
+				evolution     int8
 			}
 
 			// Making an slice of card structs to hold results.
@@ -487,7 +553,7 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 			// Iterating over the results and appending to an array of cards.
 			for rows.Next() {
-				err := rows.Scan(&id, &characterName, &customName)
+				err := rows.Scan(&id, &characterName, &customName, &evolution)
 				if err != nil {
 					log.Printf("%vERROR%v - COULD NOT RETRIEVE CHARACTER FROM ROW:\n\t%v", Red, Reset, err)
 					return
@@ -497,6 +563,7 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				card.id = id
 				card.characterName = characterName
 				card.customName = customName
+				card.evolution = evolution
 
 				cards = append(cards, card)
 			}
@@ -521,7 +588,7 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 			// SUPER funky shit to chop up array.
 			var chunkedCards [][]Card
-			chunkSize := 10
+			chunkSize := 25
 
 			for i := 0; i < len(cards); i += chunkSize {
 				end := i + chunkSize
@@ -535,16 +602,13 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 			// Printing the results to the user. Need to clean it up...
 			for _, values := range chunkedCards {
-				// content := "```\nCharacter:\t\tCard Name:\n"
-
 				buffer := new(bytes.Buffer)
 				writer := tabwriter.NewWriter(buffer, 0, 0, 4, ' ', 0)
-				fmt.Fprintln(writer, "Character:\tCard Name:")
-				// contentStart := "```"
+				fmt.Fprintln(writer, "Character:\tCard Name:\tEvolution:")
 
 				for _, value := range values {
 					// content += fmt.Sprintf("%-10s\t%12s\n", value.characterName, value.customName)
-					_, err := fmt.Fprintf(writer, "%v\t%v\n", value.characterName, value.customName)
+					_, err := fmt.Fprintf(writer, "%v\t%v\t%v\n", value.characterName, value.customName, value.evolution)
 					if err != nil {
 						log.Println(err)
 					}
@@ -554,11 +618,15 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 
 				content := "```" + buffer.String() + "```"
 
-				webhookParam := discordgo.WebhookParams{
-					Content: content,
-				}
+				embeds = append(embeds, &discordgo.MessageEmbed{
+					Description: content,
+				})
 
-				webhookParams = append(webhookParams, webhookParam)
+				// webhookParam := discordgo.WebhookParams{
+				// 	Content: content,
+				// }
+
+				// webhookParams = append(webhookParams, webhookParam)
 			}
 
 			// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
@@ -569,11 +637,23 @@ var commandHandlers = map[string]func(session *discordgo.Session, interaction *d
 				},
 			})
 
-			for _, webhook := range webhookParams {
-				// Informing the user that they have maxxed out the level on the card.
-				// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
-				session.FollowupMessageCreate(interaction.Interaction, true, &webhook)
+			paginator := dgwidgets.NewPaginator(session, interaction.ChannelID)
+
+			for _, embed := range embeds {
+				paginator.Add(embed)
 			}
+
+			paginator.SetPageFooters()
+
+			paginator.Widget.Timeout = time.Minute * 5
+
+			paginator.Spawn()
+
+			// for _, webhook := range webhookParams {
+			// 	// Informing the user that they have maxxed out the level on the card.
+			// 	// https: //pkg.go.dev/github.com/bwmarrin/discordgo#Session.InteractionRespond
+			// 	session.FollowupMessageCreate(interaction.Interaction, true, &webhook)
+			// }
 		}
 	},
 	"display": func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
