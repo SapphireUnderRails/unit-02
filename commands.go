@@ -11,12 +11,12 @@ var dmPermission bool = false
 
 // The list of commands for the bot.
 var commands = []*discordgo.ApplicationCommand{
-	{
-		Name:                     "add_cards",
-		Description:              "Loops through './Card Art' folder and registers all the cards in there.",
-		DefaultMemberPermissions: &manageServerPermission,
-		DMPermission:             &dmPermission,
-	},
+	// {
+	// 	Name:                     "add_cards",
+	// 	Description:              "Loops through './Card Art' folder and registers all the cards in there.",
+	// 	DefaultMemberPermissions: &manageServerPermission,
+	// 	DMPermission:             &dmPermission,
+	// },
 	{
 		Name:         "register",
 		Description:  "This command registers you to play!",
